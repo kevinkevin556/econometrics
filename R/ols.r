@@ -7,22 +7,23 @@
 ols <- function(formula, data, robust=FALSE){
     X <- model.matrix(formula, data)
     y <- model.frame(formula, data)[, 1]
+    n <- dim(X)[1]
+    k <- dim(X)[2]
 
-    estimation <- .ols(X, y)
-    if (robust=="white") {
-        std_error <- robust_stde0(X, y)
-    } else {
-        robust <- "homoskadestic"
-        std_error <- stde(X, y)
-    }
+    coef <- .ols(X, y)
+    std_err <- standard_error(X, y, robust)
+    t_ratio <- coef / std_err[["value"]]
+    f_stat <- t_ratio^2
+    stat_signif <- significant_level(f_stat, df=n-k)
 
     info <- list(
         "Dep. Variable: " = toString(formula[2]),
         "R-squared: " = format(r_squared(X, y), digits = 3),
         "Adj. R-squared: " = format(adjusted_r_squared(X, y), digits = 3),
         "R-tilde-squared: " = format(r.tilde_squared(X, y), digits = 3),
-        "Covariance Type: " = robust
+        "Covariance Type: " = std_err[["cov_type"]]
     )
 
-    return(OLSResult(info, estimation, std_error))
+    return(OLSResult(info, coef, std_err[["value"]], t_ratio, stat_signif))
 }
+
