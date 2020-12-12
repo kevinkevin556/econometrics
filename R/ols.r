@@ -1,5 +1,5 @@
 .ols <- function(X, y){
-    solve(t(X) %*% X) %*% t(X) %*% y # inv(X'X)(X'y)
+    solve(t(X) %*% X, t(X) %*% y)
 }
 
 
@@ -12,9 +12,15 @@ ols <- function(formula, data, robust=FALSE){
 
     coef <- .ols(X, y)
     std_err <- standard_error(X, y, robust)
+    residual <- y - X %*% coef
+
     t_ratio <- coef / std_err[["value"]]
     f_stat <- t_ratio^2
     stat_signif <- significant_level(f_stat, df=n-k)
+    
+    overall_significance <- overall_significance_f_test(X, y)
+    resid_normality <- jarque_bera_test(residual)
+
 
     info <- list(
         "Dep. Variable: " = toString(formula[2]),
@@ -24,6 +30,6 @@ ols <- function(formula, data, robust=FALSE){
         "Covariance Type: " = std_err[["cov_type"]]
     )
 
-    return(OLSResult(info, coef, std_err[["value"]], t_ratio, stat_signif))
+    return(OLSResult(info, coef, std_err[["value"]], t_ratio, stat_signif, overall_significance, resid_normality))
 }
 
